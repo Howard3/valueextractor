@@ -57,6 +57,7 @@ func main() {
         fmt.Printf("Extracted values - ID: %d, Name: %s\n", id, name)
     }
 }
+```
 
 ## Using `WithOptional` for Optional Values
 
