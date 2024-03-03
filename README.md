@@ -59,6 +59,32 @@ func main() {
 }
 ```
 
+Alternatively this can be written with fewer lines using the `Result` function.
+```go
+package main
+
+import (
+    "fmt"
+    "net/http"
+    "github.com/Howard3/valueextractor"
+)
+
+func main() {
+    // Example: Extracting values from a query parameter
+    req, _ := http.NewRequest("GET", "/?id=123&name=John", nil)
+    queryExtractor := valueextractor.QueryExtractor{Query: req.URL.Query()}
+
+    ex := valueextractor.Using(queryExtractor)
+    id := valueextractor.Result(ex, "id", valueextractor.AsUint64)
+    name := valueextractor.Result(ex, "name", valueextractor.AsString)
+
+    if err := ex.Errors(); err != nil {
+        fmt.Println("Error:", err)
+    } else {
+        fmt.Printf("Extracted values - ID: %d, Name: %s\n", id, name)
+    }
+}
+```
 ## Using `WithOptional` for Optional Values
 
 The `WithOptional` function is designed to streamline the handling of optional values. When extracting a value that may or may not be present (and its absence is not considered an error), use `WithOptional` instead of `With`. This function behaves similarly to `With`, attempting to extract and convert a value, but it will ignore `ErrNotFound` errors. This is particularly useful for working with HTTP requests where certain parameters may be optional.

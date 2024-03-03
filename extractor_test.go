@@ -12,6 +12,24 @@ type Bench1 struct {
 	Age  uint64 `query:"age"`
 }
 
+func TestResultGeneric(t *testing.T) {
+	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John&age=30", nil)
+
+	ex := Using(QueryExtractor{Query: req.URL.Query()})
+	name := Result(ex, "name", AsString)
+	age := Result(ex, "age", AsUint64)
+	err := ex.Errors()
+
+	switch {
+	case err != nil:
+		t.Fatal(err)
+	case name != "John":
+		t.Fatal("Name not parsed correctly")
+	case age != 30:
+		t.Fatal("Age not parsed correctly")
+	}
+}
+
 func BenchmarkParamsParser(b *testing.B) {
 	// construct a request with sample query data
 	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John&age=30", nil)

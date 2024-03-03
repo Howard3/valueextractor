@@ -2,26 +2,25 @@ package valueextractor
 
 import (
 	"errors"
-	"fmt"
 )
 
 // Extractor is a value extractor that can be used to extract values from a request
 // and type-convert them to the desired type, collecting errors along the way
 type Extractor struct {
 	extractor ValueExtractor
-	errors    []error
+	errors    []*Error
 }
 
 // With taks a key and a converter and extracts the value from the request
 func (ec *Extractor) With(key string, converter Converter) {
 	str, err := ec.extractor.Get(key)
 	if err != nil {
-		ec.AddError(key, err)
+		ec.AddExtractError(key, err)
 		return
 	}
 
 	if err := converter(ec, str); err != nil {
-		ec.AddError(key, err)
+		ec.AddConvertError(key, err)
 	}
 }
 
@@ -33,19 +32,23 @@ func (ec *Extractor) WithOptional(key string, converter Converter) {
 			return
 		}
 
-		ec.AddError(key, err)
+		ec.AddExtractError(key, err)
 		return
 	}
 
 	if err := converter(ec, str); err != nil {
-		ec.AddError(key, err)
+		ec.AddConvertError(key, err)
 	}
 }
 
-// AddError adds an error to the chain
-func (ec *Extractor) AddError(key string, err error) *Extractor {
-	ec.errors = append(ec.errors, fmt.Errorf("error extracting key %s: %w", key, err))
-	return ec
+// AddExtractError adds an error to the chain
+func (ec *Extractor) AddExtractError(key string, err error) {
+	ec.errors = append(ec.errors, NewExtractError(key, err))
+}
+
+// AddConvertError adds an error to the chain
+func (ec *Extractor) AddConvertError(key string, err error) {
+	ec.errors = append(ec.errors, NewConvertError(key, err))
 }
 
 // Using creates a new Extractor with the given value extractor
@@ -66,4 +69,24 @@ func (ec *Extractor) Errors() error {
 	}
 
 	return errMsgs
+}
+
+// ResultConverter defines a wrapped converter with input argument as a reference that returns
+// a converter function. It's intended to be used with the Result & ResultOptional functions
+type ResultConverter[T any] func(*T) Converter
+
+// Result is a function that extracts a value from the request and converts it to the desired type
+// It offers a simpler API than the With function
+func Result[T any](ex *Extractor, key string, converter ResultConverter[T]) T {
+	var result T
+	ex.With(key, converter(&result))
+	return result
+}
+
+// ResultOptional is a function that extracts a value from the request and converts it to the desired type
+// It offers a simpler API than the WithOptional function
+func ResultOptional[T any](ex *Extractor, key string, converter ResultConverter[T]) T {
+	var result T
+	ex.WithOptional(key, converter(&result))
+	return result
 }
