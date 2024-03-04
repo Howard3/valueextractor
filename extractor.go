@@ -58,17 +58,26 @@ func Using(extractor ValueExtractor) *Extractor {
 }
 
 // Errors returns an error if there are any errors in the parser
-func (ec *Extractor) Errors() error {
+func (ec *Extractor) Errors() []*Error {
 	if len(ec.errors) == 0 {
 		return nil
 	}
 
-	var errMsgs error
-	for _, err := range ec.errors {
-		errMsgs = errors.Join(errMsgs, err)
+	return ec.errors
+}
+
+// JoinedErrors returns a single error with all the errors JoinedErrors
+func (ec *Extractor) JoinedErrors() error {
+	if len(ec.errors) == 0 {
+		return nil
 	}
 
-	return errMsgs
+	var err error
+	for _, e := range ec.errors {
+		err = errors.Join(err, e)
+	}
+
+	return err
 }
 
 // ResultConverter defines a wrapped converter with input argument as a reference that returns
