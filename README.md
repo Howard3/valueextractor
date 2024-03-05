@@ -48,43 +48,36 @@ import (
 )
 
 func main() {
-    // Example: Extracting values from a query parameter
-    req, _ := http.NewRequest("GET", "/?id=123&name=John", nil)
-    queryExtractor := valueextractor.QueryExtractor{Query: req.URL.Query()}
+    // Initialize the extractor with optional keys using the new fluent interface
+    req, _ := http.NewRequest("GET", "/?id=123&name=John&age=30", nil)
+    ex := valueextractor.Using(valueextractor.QueryExtractor{Query: req.URL.Query()}, valueextractor.WithOptionalKeys("age", "foo"))
 
     var id uint64
     var name string
-    extractor := valueextractor.Using(queryExtractor)
-    extractor.With("id", valueextractor.AsUint64(&id))
-    extractor.With("name", valueextractor.AsString(&name))
+    var age uint64 // Note: 'age' is treated as an optional parameter
+    ex.With("id", valueextractor.AsUint64(&id))
+    ex.With("name", valueextractor.AsString(&name))
+    ex.With("age", valueextractor.AsUint64(&age)) // No error if 'age' is missing
 
-    if err := extractor.Errors(); err != nil {
+    if err := ex.Errors(); err != nil {
         fmt.Println("Error:", err)
     } else {
-        fmt.Printf("Extracted values - ID: %d, Name: %s\n", id, name)
+        fmt.Printf("Extracted values - ID: %d, Name: %s, Age: %d\n", id, name, age)
     }
 }
 ```
 
-##### Using `WithOptional` for Optional Values
-The `WithOptional` function is designed to streamline the handling of optional values. When extracting a value that may or may not be present (and its absence is not considered an error), use `WithOptional` instead of `With`. This function behaves similarly to `With`, attempting to extract and convert a value, but it will ignore `ErrNotFound` errors. This is particularly useful for working with HTTP requests where certain parameters may be optional.
-Similarly the Return generics offer a method, ReturnOptional.
+#### Fluent Initialization with Optional Keys
+
+The `Using` function supports a fluent interface for specifying optional keys. This is achieved using the `WithOptionalKeys` function, which modifies the extractor's behavior to treat certain keys as optional during value extraction. If these keys are missing from the source, their absence will not contribute to the error collection, simplifying error handling for optional data.
 
 ```go
-var age uint64
-extractor.WithOptional("age", valueextractor.AsUint64(&age))
+ex := valueextractor.Using(QueryExtractor{Query: req.URL.Query()}, valueextractor.WithOptionalKeys("age", "foo"))
 ```
 
-In this example, if the "age" parameter is missing from the data source, `WithOptional` will not add an `ErrNotFound` to the error chain, allowing the application to proceed without treating the absence of "age" as an error.
-
-By leveraging `WithOptional`, you can write cleaner, more concise code for handling optional parameters without cluttering your error handling logic with checks for missing but non-essential data.
-
-
+This approach allows you to declaratively specify which keys are optional, enhancing code readability and reducing the boilerplate associated with optional value handling.
 
 #### Using Direct Return Functions
-
-Direct return functions like `ReturnString` and `ReturnUint64` offer a more straightforward way to extract and convert values, especially when used within conditional statements or benchmarks.
-
 ```go
 package main
 
@@ -133,6 +126,7 @@ func main() {
     }
 }
 ```
+
 
 
 ## Extensibility

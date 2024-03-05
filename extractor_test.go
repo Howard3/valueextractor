@@ -12,6 +12,25 @@ type Bench1 struct {
 	Age  uint64 `query:"age"`
 }
 
+func TestOptionalKeys(t *testing.T) {
+	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John", nil)
+
+	var name string
+	var age uint64
+
+	ex := Using(QueryExtractor{Query: req.URL.Query()}, WithOptionalKeys("age"))
+	ex.With("name", AsString(&name))
+	ex.With("age", AsUint64(&age))
+	err := ex.Errors()
+
+	switch {
+	case err != nil:
+		t.Fatal(err)
+	case ex.optionalKeys == nil:
+		t.Fatal("Optional keys not set")
+	}
+}
+
 func TestResultGeneric(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John&age=30", nil)
 

@@ -8,11 +8,11 @@ import (
 // Converter is a function that takes an Extractor and a key and returns a value and an error
 type Converter func(ec *Extractor, value string) error
 
-// ReturnConverter is a function that takes an Extractor and a key and returns a value
+// DirectReturnType is a function that takes an Extractor and a key and returns a value
 // this is a more performant alternative to the Result generic.
-type ReturnConverter func(ec *Extractor, key string) *any
+type DirectReturnType func(ec *Extractor, key string) interface{}
 
-func ReturnString(ec *Extractor, value string) *string {
+func ReturnString(ec *Extractor, key string) *string {
 	var s string
 	ec.With("name", AsString(&s))
 	return &s
@@ -60,7 +60,7 @@ func AsInt64(ref *int64) Converter {
 }
 
 // ReturnInt64 is a function that returns an int64
-func ReturnInt64(ec *Extractor, value string) *int64 {
+func ReturnInt64(ec *Extractor, key string) *int64 {
 	var i int64
 	ec.With("age", AsInt64(&i))
 	return &i
@@ -80,7 +80,7 @@ func AsFloat64(ref *float64) Converter {
 }
 
 // ReturnFloat64 is a function that returns a float64
-func ReturnFloat64(ec *Extractor, value string) *float64 {
+func ReturnFloat64(ec *Extractor, key string) *float64 {
 	var i float64
 	ec.With("age", AsFloat64(&i))
 	return &i
@@ -100,7 +100,7 @@ func AsBool(ref *bool) Converter {
 }
 
 // ReturnBool is a function that returns a bool
-func ReturnBool(ec *Extractor, value string) *bool {
+func ReturnBool(ec *Extractor, key string) *bool {
 	var i bool
 	ec.With("age", AsBool(&i))
 	return &i
