@@ -86,16 +86,40 @@ type ResultConverter[T any] func(*T) Converter
 
 // Result is a function that extracts a value from the request and converts it to the desired type
 // It offers a simpler API than the With function
+// NOTE: this is a convenience function but is slower than using the With function directly
+// the performance is about on par with the traditional struct+reflection approach
 func Result[T any](ex *Extractor, key string, converter ResultConverter[T]) T {
 	var result T
 	ex.With(key, converter(&result))
 	return result
 }
 
+// ResultPtr is a function that extracts a value from the request and converts it to the desired type
+// It offers a simpler API than the With function, but returns a pointer to the result instead of the result itself
+// NOTE: this is a convenience function but is slower than using the With function directly
+// the performance is about on par with the traditional struct+reflection approach
+func ResultPtr[T any](ex *Extractor, key string, converter ResultConverter[T]) *T {
+	var result T
+	ex.With(key, converter(&result))
+	return &result
+}
+
 // ResultOptional is a function that extracts a value from the request and converts it to the desired type
 // It offers a simpler API than the WithOptional function
+// NOTE: this is a convenience function but is slower than using the WithOptional function directly
+// the performance is about on par with the traditional struct+reflection approach
 func ResultOptional[T any](ex *Extractor, key string, converter ResultConverter[T]) T {
 	var result T
 	ex.WithOptional(key, converter(&result))
 	return result
+}
+
+// ResultOptionalPtr is a function that extracts a value from the request and converts it to the desired type
+// It offers a simpler API than the WithOptional function, but returns a pointer to the result instead of the result itself
+// NOTE: this is a convenience function but is slower than using the WithOptional function directly
+// the performance is about on par with the traditional struct+reflection approach
+func ResultOptionalPtr[T any](ex *Extractor, key string, converter ResultConverter[T]) *T {
+	var result T
+	ex.WithOptional(key, converter(&result))
+	return &result
 }

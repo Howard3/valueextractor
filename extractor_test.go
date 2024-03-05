@@ -53,6 +53,48 @@ func BenchmarkParamsParser(b *testing.B) {
 	}
 }
 
+func BenchmarkParamsParserResultsValue(b *testing.B) {
+	// construct a request with sample query data
+	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John&age=30", nil)
+
+	for i := 0; i < b.N; i++ {
+		ex := Using(QueryExtractor{Query: req.URL.Query()})
+
+		if Result(ex, "name", AsString) != "John" {
+			b.Fatal("Name not parsed correctly")
+		}
+
+		if Result(ex, "age", AsUint64) != 30 {
+			b.Fatal("Age not parsed correctly")
+		}
+
+		if err := ex.Errors(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkParamsParserResultsPtr(b *testing.B) {
+	// construct a request with sample query data
+	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John&age=30", nil)
+
+	for i := 0; i < b.N; i++ {
+		ex := Using(QueryExtractor{Query: req.URL.Query()})
+
+		if *ResultPtr(ex, "name", AsString) != "John" {
+			b.Fatal("Name not parsed correctly")
+		}
+
+		if *ResultPtr(ex, "age", AsUint64) != 30 {
+			b.Fatal("Age not parsed correctly")
+		}
+
+		if err := ex.Errors(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkParamsParserNoStruct(b *testing.B) {
 	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John&age=30", nil)
 
