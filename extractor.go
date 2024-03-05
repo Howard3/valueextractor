@@ -2,6 +2,7 @@ package valueextractor
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Extractor is a value extractor that can be used to extract values from a request
@@ -83,7 +84,7 @@ func (ec *Extractor) JoinedErrors() error {
 
 	var err error
 	for _, e := range ec.errors {
-		err = errors.Join(err, e)
+		err = errors.Join(err, fmt.Errorf("%s: %w", e.key, e.err))
 	}
 
 	return err
