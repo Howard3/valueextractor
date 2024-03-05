@@ -14,7 +14,7 @@ type DirectReturnType func(ec *Extractor, key string) interface{}
 
 func ReturnString(ec *Extractor, key string) *string {
 	var s string
-	ec.With("name", AsString(&s))
+	ec.With(key, AsString(&s))
 	return &s
 }
 
