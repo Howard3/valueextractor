@@ -12,11 +12,12 @@ This package provides a flexible system for extracting values from various sourc
 ## Features
 
 - **Extensible Value Extraction**: Supports extracting values from maps, HTTP request query parameters, and form data.
-- **Type Conversion**: Convert extracted strings into specific Go types (`string`, `uint64`, `int64`), including custom type conversions.
+- **Type Conversion**: Convert extracted strings into specific Go types (`string`, `uint64`, `int64`, `float64`, `bool`), including custom type conversions.
+- **Direct Return Types**: Provides direct return functions (`ReturnString`, `ReturnUint64`, etc.) for performance optimization.
 - **Error Handling**: Collects and aggregates errors throughout the extraction and conversion process for robust error reporting.
-- **No external dependencies** - only the Go standard library
-- **Fast** - run `go test -bench .`. It's about **20% faster** than the idiomatic struct tag + reflection
-- **Lighweight** - Less than 300 LOC 
+- **No external dependencies** - only the Go standard library.
+- **Fast** - run `go test -bench .`. It's between **20-40% faster** than the idiomatic struct tag + reflection.
+- **Lighweight** - Less than 300 LOC.
 - **Easy to read** - Only 1 `if err != nil` for all of your conversions.
  
 ## Getting Started
@@ -29,8 +30,14 @@ go get github.com/Howard3/valueextractor
 
 ### Basic Usage
 
-Here's a quick example to get you started:
+Here are quick examples to get you started:
 
+There are three main ways to use this library:
+- References
+- Direct value return objects
+- Return Generics
+
+#### Using References
 ```go
 package main
 
@@ -59,7 +66,48 @@ func main() {
 }
 ```
 
-Alternatively this can be written with fewer lines using the `Result` function.
+##### Using `WithOptional` for Optional Values
+The `WithOptional` function is designed to streamline the handling of optional values. When extracting a value that may or may not be present (and its absence is not considered an error), use `WithOptional` instead of `With`. This function behaves similarly to `With`, attempting to extract and convert a value, but it will ignore `ErrNotFound` errors. This is particularly useful for working with HTTP requests where certain parameters may be optional.
+Similarly the Return generics offer a method, ReturnOptional.
+
+```go
+var age uint64
+extractor.WithOptional("age", valueextractor.AsUint64(&age))
+```
+
+In this example, if the "age" parameter is missing from the data source, `WithOptional` will not add an `ErrNotFound` to the error chain, allowing the application to proceed without treating the absence of "age" as an error.
+
+By leveraging `WithOptional`, you can write cleaner, more concise code for handling optional parameters without cluttering your error handling logic with checks for missing but non-essential data.
+
+
+
+#### Using Direct Return Functions
+
+Direct return functions like `ReturnString` and `ReturnUint64` offer a more straightforward way to extract and convert values, especially when used within conditional statements or benchmarks.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/Howard3/valueextractor"
+)
+
+func main() {
+    ex := valueextractor.NewExtractor(...) // Assume ex is properly initialized
+
+    if *valueextractor.ReturnString(ex, "name") != "John" {
+        fmt.Println("Name not parsed correctly")
+    }
+
+    if *valueextractor.ReturnUint64(ex, "age") != 30 {
+        fmt.Println("Age not parsed correctly")
+    }
+}
+```
+
+#### Using Return Generics
+Return generics are easy to work with but have approximately the same performance as the struct+reflection approach.
 ```go
 package main
 
@@ -85,26 +133,11 @@ func main() {
     }
 }
 ```
-## Using `WithOptional` for Optional Values
-
-The `WithOptional` function is designed to streamline the handling of optional values. When extracting a value that may or may not be present (and its absence is not considered an error), use `WithOptional` instead of `With`. This function behaves similarly to `With`, attempting to extract and convert a value, but it will ignore `ErrNotFound` errors. This is particularly useful for working with HTTP requests where certain parameters may be optional.
-
-### Example Usage of `WithOptional`
-
-```go
-var age uint64
-extractor.WithOptional("age", valueextractor.AsUint64(&age))
-```
-
-In this example, if the "age" parameter is missing from the data source, `WithOptional` will not add an `ErrNotFound` to the error chain, allowing the application to proceed without treating the absence of "age" as an error.
-
-By leveraging `WithOptional`, you can write cleaner, more concise code for handling optional parameters without cluttering your error handling logic with checks for missing but non-essential data.
 
 
 ## Extensibility
 
-The system is designed with extensibility in mind. You can extend it by implementing custom `ValueExtractor` interfaces or `Converter` functions.
-
+The system is designed with extensibility in mind. You can extend it by implementing custom `ValueExtractor` interfaces or `Converter` functions. See the documentation for details on creating custom extractors and converters.
 ### Implementing a Custom ValueExtractor
 
 To extract values from a new data source, implement the `ValueExtractor` interface:
@@ -135,42 +168,8 @@ func AsCustomType(ref *CustomType) valueextractor.Converter {
 
 ## Error Handling
 
-Errors are collected throughout the extraction and conversion process. Use the `Errors` method to retrieve any accumulated errors:
-
-```go
-if err := extractor.Errors(); err != nil {
-    // Handle error
-}
-```
-
-In addition to the general error handling mechanism provided by the `Extractor` system, there are specific errors that users should be aware of when working with the value extraction and conversion system. Understanding these errors can help in diagnosing and handling common issues that may arise during the extraction and conversion process.
-
-#### Defined Errors
-
-- **ErrNotFound**: This error is returned when the specified key is not found within the source (e.g., map, query parameters, form). It indicates that the requested value for conversion does not exist.
-
-#### Common Errors During Conversion
-
-- **Invalid uint value**: This error occurs when attempting to convert a string to a `uint64` and the string does not represent a valid unsigned integer. It indicates a format or value error in the source string.
-- **Invalid int value**: Similar to the "Invalid uint value" error, this error is returned when a string cannot be successfully converted to an `int64` due to formatting issues or value constraints.
-
-#### Handling Specific Errors
-
-When using the `Extractor` system, it's important to check for these specific errors where appropriate. You can use Go's `errors.Is` function to check for a specific error type. Here’s how you might handle `ErrNotFound` to differentiate between missing values and other errors:
-
-```go
-var id uint64
-extractor := valueextractor.Using(queryExtractor)
-extractor.With("id", valueextractor.AsUint64(&id))
-
-if err := extractor.Errors(); err != nil {
-    if errors.Is(err, valueextractor.ErrNotFound) {
-        fmt.Println("The specified key was not found.")
-    } else {
-        fmt.Println("Error:", err)
-    }
-}
-```
+Errors are collected throughout the extraction and conversion process. Use the `Errors` method to retrieve any accumulated errors. The package defines `ErrNotFound` for missing keys and provides detailed error types for extract and convert errors, allowing precise error handling and diagnostics.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
