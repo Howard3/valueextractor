@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // ErrNotFound is an error that is returned when a key is not found
@@ -55,7 +56,31 @@ type FormExtractor struct {
 
 func (fe *FormExtractor) isMultipart() bool {
 	ctype := fe.Request.Header.Get("Content-Type")
-	return ctype == "multipart/form-data"
+	return strings.HasPrefix(ctype, "multipart/form-data")
+}
+
+// ensureParsed ensures that the form has been parsed
+// for multipart forms, it parses the form using ParseMultipartForm and sets the getter to FormValue
+// for urlencoded forms, it parses the form using ParseForm and sets the getter to Get
+func (fe *FormExtractor) ensureParsed() error {
+	if fe.parsed {
+		return nil
+	}
+
+	fe.getter = fe.Request.Form.Get
+
+	if fe.isMultipart() {
+		if err := fe.Request.ParseMultipartForm(0); err != nil {
+			return errors.Join(ErrRequestParseForm, err)
+		}
+		fe.getter = fe.Request.FormValue
+	} else if err := fe.Request.ParseForm(); err != nil {
+		return errors.Join(ErrRequestParseForm, err)
+	}
+
+	fe.parsed = true
+
+	return nil
 }
 
 // Get returns the value of a form parameter from the Request
@@ -64,19 +89,8 @@ func (fe *FormExtractor) Get(key string) (string, error) {
 		return "", ErrRequestNil
 	}
 
-	if !fe.parsed {
-		fe.getter = fe.Request.Form.Get
-
-		if fe.isMultipart() {
-			if err := fe.Request.ParseMultipartForm(0); err != nil {
-				return "", errors.Join(ErrRequestParseForm, err)
-			}
-			fe.getter = fe.Request.FormValue
-		} else if err := fe.Request.ParseForm(); err != nil {
-			return "", errors.Join(ErrRequestParseForm, err)
-		}
-
-		fe.parsed = true
+	if err := fe.ensureParsed(); err != nil {
+		return "", err
 	}
 
 	value := fe.getter(key)
