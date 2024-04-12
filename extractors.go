@@ -50,6 +50,12 @@ var ErrRequestParseForm = errors.New("error parsing form")
 type FormExtractor struct {
 	Request *http.Request
 	parsed  bool
+	getter  func(string) string
+}
+
+func (fe *FormExtractor) isMultipart() bool {
+	ctype := fe.Request.Header.Get("Content-Type")
+	return ctype == "multipart/form-data"
 }
 
 // Get returns the value of a form parameter from the Request
@@ -59,14 +65,21 @@ func (fe *FormExtractor) Get(key string) (string, error) {
 	}
 
 	if !fe.parsed {
-		if err := fe.Request.ParseForm(); err != nil {
+		fe.getter = fe.Request.Form.Get
+
+		if fe.isMultipart() {
+			if err := fe.Request.ParseMultipartForm(0); err != nil {
+				return "", errors.Join(ErrRequestParseForm, err)
+			}
+			fe.getter = fe.Request.FormValue
+		} else if err := fe.Request.ParseForm(); err != nil {
 			return "", errors.Join(ErrRequestParseForm, err)
 		}
 
 		fe.parsed = true
 	}
 
-	value := fe.Request.Form.Get(key)
+	value := fe.getter(key)
 	if value == "" {
 		return "", ErrNotFound
 	}
