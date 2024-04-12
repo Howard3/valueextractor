@@ -67,7 +67,7 @@ func (fe *FormExtractor) ensureParsed() error {
 		return nil
 	}
 
-	fe.getter = fe.Request.Form.Get
+	fe.getter = fe.Request.FormValue
 
 	if fe.isMultipart() {
 		if err := fe.Request.ParseMultipartForm(0); err != nil {
