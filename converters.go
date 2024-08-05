@@ -3,6 +3,7 @@ package valueextractor
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Converter is a function that takes an Extractor and a key and returns a value and an error
@@ -15,6 +16,17 @@ type DirectReturnType func(ec *Extractor, key string) interface{}
 func ReturnString(ec *Extractor, key string) *string {
 	var s string
 	ec.With(key, AsString(&s))
+	return &s
+}
+
+func ReturnStringArray(ec *Extractor, key string) *[]string {
+	var s []string
+	var str string
+	ec.With(key, AsString(&str))
+	keys := strings.Split(str, ",")
+	for _, k := range keys {
+		s = append(s, k)
+	}
 	return &s
 }
 

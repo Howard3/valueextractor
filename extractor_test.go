@@ -72,14 +72,31 @@ func BenchmarkParamsParser(b *testing.B) {
 	}
 }
 
+// compareSlices compares two slices of strings and returns true if they are equal.
+func compareSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func BenchmarkTypeReturn(b *testing.B) {
-	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John&age=30", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8080?name=John&age=30&roles=hr,admin,super_admin", nil)
 
 	for i := 0; i < b.N; i++ {
 		ex := Using(QueryExtractor{Query: req.URL.Query()})
 
 		if *ReturnString(ex, "name") != "John" {
 			b.Fatal("Name not parsed correctly")
+		}
+		s := []string{"hr", "admin", "super_admin"}
+		if compareSlices(*ReturnStringArray(ex, "roles"), s) {
+			b.Fatal("roles not parsed correctly")
 		}
 
 		if *ReturnUint64(ex, "age") != 30 {
